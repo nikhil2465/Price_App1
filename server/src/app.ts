@@ -36,7 +36,7 @@ export function createApp(config: Config, opts: { now?: () => Date; staticDir?: 
 
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet({ contentSecurityPolicy: config.NODE_ENV === 'production' ? undefined : false }));
   app.use(
     cors({
@@ -53,7 +53,7 @@ export function createApp(config: Config, opts: { now?: () => Date; staticDir?: 
     '/api/assistant',
     rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }),
     express.json({ limit: '64kb' }),
-    assistantProxy(config.ASSISTANT_URL),
+    assistantProxy(config.ASSISTANT_URL, config.ASSISTANT_SHARED_SECRET),
   );
   app.use('/api', rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false }));
   app.use('/api', apiRouter({ offers, search }));

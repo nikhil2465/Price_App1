@@ -1,5 +1,5 @@
 import { Bot, Loader2, Send, Sparkles, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { streamAssistant, type AssistantContext, type ChatMessage } from '../lib/assistant';
 
@@ -9,6 +9,44 @@ const SUGGESTIONS = [
   'Which bank card gives the biggest discount here?',
   'Compare these on battery life and value',
 ];
+
+/** Renders the small Markdown subset the assistant uses (bold, bullets, numbered lists) as React nodes, never as HTML. */
+function inline(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') && part.length > 4 ? <strong key={i}>{part.slice(2, -2)}</strong> : <Fragment key={i}>{part}</Fragment>,
+  );
+}
+
+function MarkdownLite({ text }: { text: string }) {
+  const blocks: ReactNode[] = [];
+  let list: { ordered: boolean; items: string[] } | null = null;
+  const flush = () => {
+    if (!list) return;
+    const Tag = list.ordered ? 'ol' : 'ul';
+    blocks.push(
+      <Tag key={blocks.length} className={`my-1 space-y-0.5 pl-5 ${list.ordered ? 'list-decimal' : 'list-disc'}`}>
+        {list.items.map((it, i) => <li key={i}>{inline(it)}</li>)}
+      </Tag>,
+    );
+    list = null;
+  };
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/^#{1,6}\s+/, '');
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (bullet?.[1] !== undefined || numbered?.[1] !== undefined) {
+      const ordered = Boolean(numbered);
+      if (list && list.ordered !== ordered) flush();
+      list ??= { ordered, items: [] };
+      list.items.push((bullet?.[1] ?? numbered?.[1])!);
+      continue;
+    }
+    flush();
+    if (line.trim()) blocks.push(<p key={blocks.length} className="my-1">{inline(line)}</p>);
+  }
+  flush();
+  return <>{blocks}</>;
+}
 
 function useAssistantContext(): AssistantContext {
   const { pathname } = useLocation();
@@ -30,6 +68,7 @@ export function AssistantWidget() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const context = useAssistantContext();
@@ -61,6 +100,7 @@ export function AssistantWidget() {
             return next;
           }),
         ctrl.signal,
+        setStatus,
       );
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
@@ -69,6 +109,7 @@ export function AssistantWidget() {
         setMessages((prev) => (prev[prev.length - 1]?.content === '' ? prev.slice(0, -1) : prev));
       }
     } finally {
+      setStatus(null);
       setBusy(false);
       abortRef.current = null;
     }
@@ -125,11 +166,17 @@ export function AssistantWidget() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                     m.role === 'user' ? 'rounded-br-md bg-brand-700 text-white' : 'rounded-bl-md bg-ink-100 text-ink-900'
                   }`}
                 >
-                  {m.content || (busy && i === messages.length - 1 ? <Loader2 className="animate-spin" size={16} aria-label="Thinking" /> : null)}
+                  {m.content ? (
+                    m.role === 'assistant' ? <MarkdownLite text={m.content} /> : <span className="whitespace-pre-wrap">{m.content}</span>
+                  ) : busy && i === messages.length - 1 ? (
+                    <span className="inline-flex items-center gap-2 text-ink-500">
+                      <Loader2 className="animate-spin" size={16} aria-hidden="true" /> {status ?? 'Thinking…'}
+                    </span>
+                  ) : null}
                 </div>
               </div>
             ))}

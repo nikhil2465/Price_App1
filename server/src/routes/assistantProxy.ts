@@ -10,21 +10,28 @@ const TIMEOUT_MS = 120_000;
  * Streams /api/assistant/* to the AI assistant service so the browser only ever talks to one origin.
  * The body is already size-limited by express.json() upstream of this router.
  */
-export function assistantProxy(assistantUrl: string): Router {
+export function assistantProxy(assistantUrl: string, sharedSecret?: string): Router {
   const base = new URL(assistantUrl);
   const r = Router();
 
   r.all('/*', async (req, res) => {
     const target = new URL(`/api/assistant${req.path}`, base);
     const controller = new AbortController();
+    // Covers the whole exchange, including the streamed body; cleared when the response finishes or the client leaves.
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    res.on('close', () => controller.abort());
+    res.on('close', () => {
+      clearTimeout(timer);
+      controller.abort();
+    });
 
     const headers: Record<string, string> = {};
     for (const h of FORWARD_REQUEST_HEADERS) {
       const v = req.headers[h];
       if (typeof v === 'string') headers[h] = v;
     }
+    // The assistant rate-limits per shopper, so pass the client IP (resolved via `trust proxy`), not ours.
+    if (req.ip) headers['x-forwarded-for'] = req.ip;
+    if (sharedSecret) headers['x-assistant-key'] = sharedSecret;
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
 
     try {
@@ -41,6 +48,7 @@ export function assistantProxy(assistantUrl: string): Router {
       }
       res.setHeader('X-Accel-Buffering', 'no');
       if (!upstream.body) {
+        clearTimeout(timer);
         res.end();
         return;
       }
@@ -52,6 +60,7 @@ export function assistantProxy(assistantUrl: string): Router {
         })
         .pipe(res);
     } catch (err) {
+      clearTimeout(timer);
       if (res.headersSent) {
         res.end();
         return;
@@ -60,8 +69,6 @@ export function assistantProxy(assistantUrl: string): Router {
       res.status(503).json({
         error: { code: 'assistant_unavailable', message: 'The shopping assistant is offline right now. Please try again shortly.' },
       });
-    } finally {
-      clearTimeout(timer);
     }
   });
 

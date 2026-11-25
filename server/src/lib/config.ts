@@ -14,7 +14,11 @@ const EnvSchema = z.object({
     .string()
     .default('http://localhost:5173')
     .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean)),
+  /** Number of reverse proxies in front of this server (0 when exposed directly), so req.ip is the real client IP. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
   ASSISTANT_URL: z.string().url().default('http://localhost:4100'),
+  /** Sent as x-assistant-key so only this server can call the assistant service. */
+  ASSISTANT_SHARED_SECRET: optionalSecret.refine((v) => v === undefined || v.length >= 16, 'must be at least 16 characters'),
   OFFER_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(86_400).default(900),
   AMAZON_PAAPI_ACCESS_KEY: optionalSecret,
   AMAZON_PAAPI_SECRET_KEY: optionalSecret,

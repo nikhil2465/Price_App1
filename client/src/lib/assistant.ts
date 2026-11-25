@@ -8,17 +8,22 @@ export interface AssistantContext {
   compareIds?: string[];
 }
 
-type StreamEvent = { type: 'text'; delta: string } | { type: 'done' } | { type: 'error'; message: string };
+type StreamEvent =
+  | { type: 'text'; delta: string }
+  | { type: 'status'; tool?: string; message?: string }
+  | { type: 'done' }
+  | { type: 'error'; message: string };
 
 /**
  * Streams a reply from POST /api/assistant/chat (server-sent events).
- * Calls onDelta for each text chunk; resolves when the stream ends; rejects with a user-facing message on failure.
+ * Calls onDelta for each text chunk and onStatus for progress events (unknown event types are ignored); resolves when the stream ends; rejects with a user-facing message on failure.
  */
 export async function streamAssistant(
   messages: ChatMessage[],
   context: AssistantContext,
   onDelta: (text: string) => void,
   signal: AbortSignal,
+  onStatus?: (message: string) => void,
 ): Promise<void> {
   let res: Response;
   try {
@@ -66,6 +71,7 @@ export async function streamAssistant(
         continue;
       }
       if (evt.type === 'text') onDelta(evt.delta);
+      else if (evt.type === 'status') onStatus?.(evt.message ?? 'Working…');
       else if (evt.type === 'error') throw new Error(evt.message || 'The assistant hit a problem.');
       else if (evt.type === 'done') return;
     }
