@@ -1,0 +1,27 @@
+{
+  "name": "pricewise-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PriceWise AI shopping assistant: multi-marketplace price comparison, deal, discount, seller-trust and returns guidance powered by Claude.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "check:contract": "node scripts/check-contract.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.14.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

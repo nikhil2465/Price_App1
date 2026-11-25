@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PriceWise Assistant</title>
+  <meta name="description" content="Ask the PriceWise AI shopping assistant to compare prices across Amazon, Flipkart, Croma and more, spot fake discounts, check sellers and sort out returns." />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">₹</span>
+      <span class="brand-name">Price<strong>Wise</strong></span>
+      <span class="tag">AI Shopping Assistant</span>
+    </div>
+    <button id="new-chat" class="ghost" type="button">New chat</button>
+  </header>
+
+  <main class="layout">
+    <aside class="side" aria-label="About the assistant">
+      <h1>Buy smarter across every store</h1>
+      <p class="lede">One assistant that compares Amazon, Flipkart, Croma, Reliance Digital, Vijay Sales, Tata CLiQ, Myntra, AJIO and Nykaa, and tells you what a deal is really worth.</p>
+      <ul class="promises">
+        <li><span class="dot ok" aria-hidden="true"></span><div><strong>Real price, not list price</strong><br />Delivery fees and only the bank offers you can use.</div></li>
+        <li><span class="dot warn" aria-hidden="true"></span><div><strong>Fake discount check</strong><br />Spots inflated MRPs and prices raised before a sale.</div></li>
+        <li><span class="dot info" aria-hidden="true"></span><div><strong>Seller trust</strong><br />Flags too-good-to-be-true listings and no-return sellers.</div></li>
+        <li><span class="dot ok" aria-hidden="true"></span><div><strong>Returns help</strong><br />Return windows, steps, and how to escalate.</div></li>
+      </ul>
+      <p class="fine">Neutral by design: no store pays for ranking. Prices shown in this demo are sample data.</p>
+    </aside>
+
+    <section class="chat" aria-label="Chat">
+      <div id="log" class="log" role="log" aria-live="polite">
+        <div class="msg assistant intro">
+          <div class="bubble">
+            <p>Hi! Tell me what you want to buy and your budget, or paste a product name. I'll find the best price across stores and check whether the deal is real.</p>
+          </div>
+        </div>
+        <div id="suggestions" class="suggestions" aria-label="Suggested questions">
+          <button type="button" class="chip">Best phone under ₹25,000 for battery life</button>
+          <button type="button" class="chip">Where is the iPhone 16 cheapest with an HDFC credit card?</button>
+          <button type="button" class="chip">Is 75% off on boAt Airdopes 141 a real discount?</button>
+          <button type="button" class="chip">Is the cheapest Sony WH-1000XM5 seller safe?</button>
+          <button type="button" class="chip">Galaxy S25 on Flipkart: buy now or wait?</button>
+          <button type="button" class="chip">Can I return a face serum on Nykaa?</button>
+        </div>
+      </div>
+
+      <div id="status" class="status" hidden><span class="spinner" aria-hidden="true"></span><span id="status-text">Thinking</span></div>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <label for="input" class="sr-only">Ask about a product, price, deal, seller or return</label>
+        <textarea id="input" rows="1" maxlength="2000" placeholder="Ask about any product, price, deal, seller or return..." required></textarea>
+        <button id="send" type="submit" class="primary" aria-label="Send">Send</button>
+      </form>
+      <p class="disclaimer">AI answers can make mistakes. Confirm the final price and return terms on the store's page before you pay.</p>
+    </section>
+  </main>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
